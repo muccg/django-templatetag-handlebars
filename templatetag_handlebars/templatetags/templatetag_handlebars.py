@@ -1,9 +1,12 @@
-from django.conf import settings
 from django import template
 from django.conf import settings
 
 
 register = template.Library()
+
+TOKEN_VAR = template.base.TOKEN_VAR
+TOKEN_TEXT = template.base.TOKEN_TEXT
+TOKEN_BLOCK = template.base.TOKEN_BLOCK
 
 """
 
@@ -34,14 +37,14 @@ def verbatim_tags(parser, token, endtagname):
         if token.contents == endtagname:
             break
 
-        if token.token_type == template.TOKEN_VAR:
+        if token.token_type == TOKEN_VAR:
             text_and_nodes.append('{{')
             text_and_nodes.append(token.contents)
 
-        elif token.token_type == template.TOKEN_TEXT:
+        elif token.token_type == TOKEN_TEXT:
             text_and_nodes.append(token.contents)
 
-        elif token.token_type == template.TOKEN_BLOCK:
+        elif token.token_type == TOKEN_BLOCK:
             try:
                 command = token.contents.split()[0]
             except IndexError:
@@ -53,12 +56,12 @@ def verbatim_tags(parser, token, endtagname):
                 parser.invalid_block_tag(token, command, None)
             try:
                 node = compile_func(parser, token)
-            except template.TemplateSyntaxError, e:
+            except template.TemplateSyntaxError as e:
                 if not parser.compile_function_error(token, e):
                     raise
             text_and_nodes.append(node)
 
-        if token.token_type == template.TOKEN_VAR:
+        if token.token_type == TOKEN_VAR:
             text_and_nodes.append('}}')
 
     return text_and_nodes
@@ -83,7 +86,7 @@ class VerbatimNode(template.Node):
         output = ""
         # If its text we concatenate it, otherwise it's a node and we render it
         for bit in self.text_and_nodes:
-            if isinstance(bit, basestring): 
+            if isinstance(bit, str):
                 output += bit
             else:
                 output += bit.render(context)
@@ -132,9 +135,10 @@ def tplhandlebars(parser, token):
     text_and_nodes = verbatim_tags(parser, token, endtagname='endtplhandlebars')
     # Extract template id from token
     tokens = token.split_contents()
-    stripquote = lambda s: s[1:-1] if s[:1]=='"' else s
+    stripquote = lambda s: s[1:-1] if s[:1] == '"' else s
     try:
-        tag_name, template_id = map(stripquote , tokens[:2])
+        tag_name, template_id = map(stripquote, tokens[:2])
     except ValueError:
-        raise template.TemplateSyntaxError, "%s tag requires exactly one argument" % token.split_contents()[0]
+        err = "%s tag requires exactly one argument" % token.split_contents()[0]
+        raise template.TemplateSyntaxError(err)
     return HandlebarsNode(template_id, text_and_nodes)
