@@ -4,6 +4,10 @@ from django.utils import six
 
 register = template.Library()
 
+TOKEN_VAR = template.base.TOKEN_VAR
+TOKEN_TEXT = template.base.TOKEN_TEXT
+TOKEN_BLOCK = template.base.TOKEN_BLOCK
+
 """
 
     Most of this code was written by Miguel Araujo
@@ -142,6 +146,6 @@ def tplhandlebars(parser, token):
     try:
         tag_name, template_id = map(stripquote, tokens[:2])
     except ValueError:
-        raise template.TemplateSyntaxError(
-            "%s tag requires exactly one argument" % token.split_contents()[0])
+        err = "%s tag requires exactly one argument" % token.split_contents()[0]
+        raise template.TemplateSyntaxError(err)
     return HandlebarsNode(template_id, text_and_nodes)
